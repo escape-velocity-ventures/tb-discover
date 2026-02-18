@@ -1,0 +1,72 @@
+version: 2
+
+project_name: tb-discover
+
+builds:
+  - id: tb-discover
+    binary: tb-discover
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+dockers:
+  - image_templates:
+      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+    goarch: amd64
+    dockerfile: Dockerfile.goreleaser
+    extra_files:
+      - LICENSE
+
+  - image_templates:
+      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+    goarch: arm64
+    dockerfile: Dockerfile.goreleaser
+    extra_files:
+      - LICENSE
+
+docker_manifests:
+  - name_template: "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-amd64"
+      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/escape-velocity-ventures/tb-discover:latest"
+    image_templates:
+      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-amd64"
+      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-arm64"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+
+release:
+  github:
+    owner: escape-velocity-ventures
+    name: tb-discover
+  draft: false
+  prerelease: auto

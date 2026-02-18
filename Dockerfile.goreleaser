@@ -1,0 +1,3 @@
+FROM scratch
+COPY tb-discover /tb-discover
+ENTRYPOINT ["/tb-discover"]

@@ -1,0 +1,4 @@
+tb-discover
+tb-discover-*
+*.exe
+.DS_Store

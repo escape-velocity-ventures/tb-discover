@@ -1,0 +1,11 @@
+1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+2: eth0    inet 192.168.1.100/24 brd 192.168.1.255 scope global dynamic eth0\       valid_lft 86400sec preferred_lft 86400sec
+2: eth0    inet6 fd12:3456:789a::100/64 scope global dynamic mngtmpaddr \       valid_lft 86400sec preferred_lft 14400sec
+2: eth0    inet6 fe80::a00:27ff:fe4e:66a1/64 scope link \       valid_lft forever preferred_lft forever
+3: wlan0    inet 10.0.0.50/24 brd 10.0.0.255 scope global dynamic wlan0\       valid_lft 43200sec preferred_lft 43200sec
+3: wlan0    inet6 fe80::1234:5678:abcd:ef01/64 scope link \       valid_lft forever preferred_lft forever
+4: docker0    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0\       valid_lft forever preferred_lft forever
+5: br-k8s    inet 10.42.0.1/24 brd 10.42.0.255 scope global br-k8s\       valid_lft forever preferred_lft forever
+6: tailscale0    inet 100.64.0.5/32 scope global tailscale0\       valid_lft forever preferred_lft forever
+7: veth1234@if2    inet6 fe80::42:acff:fe11:1/64 scope link \       valid_lft forever preferred_lft forever
