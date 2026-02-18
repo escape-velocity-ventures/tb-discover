@@ -1,16 +1,16 @@
 {
    "blockdevices": [
-      {"name":"nvme0n1", "size":"500107862016", "type":"disk", "mountpoint":null, "fstype":null, "model":"Samsung SSD 970 EVO Plus 500GB", "rm":"0", "tran":"nvme", "label":null,
+      {"name":"nvme0n1", "size":"500107862016", "type":"disk", "mountpoint":null, "fstype":null, "model":"Samsung SSD 970 EVO Plus 500GB", "serial":"S4EUNG0M812345K", "rm":"0", "tran":"nvme", "label":null,
          "children": [
-            {"name":"nvme0n1p1", "size":"536870912", "type":"part", "mountpoint":"/boot/efi", "fstype":"vfat", "model":null, "rm":"0", "tran":null, "label":"EFI"},
-            {"name":"nvme0n1p2", "size":"499569082368", "type":"part", "mountpoint":"/", "fstype":"ext4", "model":null, "rm":"0", "tran":null, "label":null}
+            {"name":"nvme0n1p1", "size":"536870912", "type":"part", "mountpoint":"/boot/efi", "fstype":"vfat", "model":null, "serial":null, "rm":"0", "tran":null, "label":"EFI"},
+            {"name":"nvme0n1p2", "size":"499569082368", "type":"part", "mountpoint":"/", "fstype":"ext4", "model":null, "serial":null, "rm":"0", "tran":null, "label":null}
          ]
       },
-      {"name":"sda", "size":"2000398934016", "type":"disk", "mountpoint":null, "fstype":null, "model":"WDC WD2003FZEX-0", "rm":"0", "tran":"sata", "label":null,
+      {"name":"sda", "size":"2000398934016", "type":"disk", "mountpoint":null, "fstype":null, "model":"WDC WD2003FZEX-0", "serial":"WD-WMC1T0123456", "rm":"0", "tran":"sata", "label":null,
          "children": [
-            {"name":"sda1", "size":"2000397885440", "type":"part", "mountpoint":"/mnt/data", "fstype":"ext4", "model":null, "rm":"0", "tran":null, "label":"data"}
+            {"name":"sda1", "size":"2000397885440", "type":"part", "mountpoint":"/mnt/data", "fstype":"ext4", "model":null, "serial":null, "rm":"0", "tran":null, "label":"data"}
          ]
       },
-      {"name":"loop0", "size":"58720256", "type":"loop", "mountpoint":"/snap/core18/2812", "fstype":"squashfs", "model":null, "rm":"0", "tran":null, "label":null}
+      {"name":"loop0", "size":"58720256", "type":"loop", "mountpoint":"/snap/core18/2812", "fstype":"squashfs", "model":null, "serial":null, "rm":"0", "tran":null, "label":null}
    ]
 }

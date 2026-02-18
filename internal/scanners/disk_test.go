@@ -36,11 +36,17 @@ func TestParseDf_Ubuntu(t *testing.T) {
 	if root.UsePercent != "5%" {
 		t.Errorf("expected use 5%%, got %s", root.UsePercent)
 	}
+	if root.Origin != "local" {
+		t.Errorf("expected origin local, got %s", root.Origin)
+	}
 
 	// EFI partition
 	efi := disks[1]
 	if efi.Mount != "/boot/efi" {
 		t.Errorf("expected mount /boot/efi, got %s", efi.Mount)
+	}
+	if efi.Origin != "local" {
+		t.Errorf("expected origin local, got %s", efi.Origin)
 	}
 }
 
@@ -91,5 +97,54 @@ func TestParseDf_Empty(t *testing.T) {
 	disks = ParseDf("Filesystem      Size  Used Avail Use% Mounted on\n")
 	if len(disks) != 0 {
 		t.Errorf("expected 0 disks for header-only input, got %d", len(disks))
+	}
+}
+
+func TestParseDf_NetworkOrigin(t *testing.T) {
+	output := "Filesystem      Size  Used Avail Use% Mounted on\n" +
+		"nas:/vol/share   10T  5.0T  5.0T  50% /mnt/nas\n" +
+		"//server/share   2.0T  1.0T  1.0T  50% /mnt/smb\n" +
+		"/dev/sda1       457G   22G  412G   5% /\n"
+
+	disks := ParseDf(output)
+
+	if len(disks) != 3 {
+		t.Fatalf("expected 3 disks, got %d", len(disks))
+	}
+
+	if disks[0].Origin != "network" {
+		t.Errorf("NFS mount should have origin network, got %s", disks[0].Origin)
+	}
+	if disks[1].Origin != "network" {
+		t.Errorf("SMB mount should have origin network, got %s", disks[1].Origin)
+	}
+	if disks[2].Origin != "local" {
+		t.Errorf("/dev/ mount should have origin local, got %s", disks[2].Origin)
+	}
+}
+
+func TestClassifyDiskOrigin(t *testing.T) {
+	tests := []struct {
+		filesystem string
+		expected   string
+	}{
+		{"/dev/sda1", "local"},
+		{"/dev/nvme0n1p1", "local"},
+		{"nas:/vol/share", "network"},
+		{"//server/share", "network"},
+		{"nfs", "network"},
+		{"nfs4", "network"},
+		{"cifs", "network"},
+		{"ceph", "network"},
+		{"fuse.sshfs", "network"},
+		{"192.168.1.100:/data", "network"},
+		{"fuse.lxcfs", "virtual"},
+	}
+
+	for _, tc := range tests {
+		result := classifyDiskOrigin(tc.filesystem)
+		if result != tc.expected {
+			t.Errorf("classifyDiskOrigin(%q) = %q, expected %q", tc.filesystem, result, tc.expected)
+		}
 	}
 }

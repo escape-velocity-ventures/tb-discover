@@ -54,8 +54,35 @@ func ParseDf(output string) []DiskInfo {
 			Available:  fields[3],
 			UsePercent: fields[4],
 			Mount:      mount,
+			Origin:     classifyDiskOrigin(fs),
 		})
 	}
 
 	return disks
+}
+
+// classifyDiskOrigin determines if a filesystem is local, network, or virtual.
+func classifyDiskOrigin(filesystem string) string {
+	// Network: NFS, CIFS/SMB, GlusterFS, CephFS — device string contains ":"  or "//"
+	if strings.Contains(filesystem, ":") || strings.HasPrefix(filesystem, "//") {
+		return "network"
+	}
+
+	// Known network filesystem types
+	switch filesystem {
+	case "nfs", "nfs4", "cifs", "smb", "glusterfs", "ceph", "fuse.sshfs":
+		return "network"
+	}
+
+	// Local block devices
+	if strings.HasPrefix(filesystem, "/dev/") {
+		return "local"
+	}
+
+	// macOS local volumes
+	if strings.HasPrefix(filesystem, "/dev") || strings.HasPrefix(filesystem, "disk") {
+		return "local"
+	}
+
+	return "virtual"
 }

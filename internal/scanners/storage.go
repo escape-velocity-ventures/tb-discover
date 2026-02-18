@@ -32,6 +32,7 @@ type lsblkDevice struct {
 	MountPoint *string       `json:"mountpoint"` // nullable
 	FSType     *string       `json:"fstype"`     // nullable
 	Model      *string       `json:"model"`      // nullable
+	Serial     *string       `json:"serial"`     // nullable — hardware serial number
 	RM         json.Number   `json:"rm"`         // removable: "0" or "1" or bool
 	Tran       *string       `json:"tran"`        // transport: "sata", "nvme", "usb"
 	Label      *string       `json:"label"`       // nullable
@@ -39,7 +40,7 @@ type lsblkDevice struct {
 }
 
 func scanLinuxStorage() []StorageDevice {
-	result := HostExec("lsblk -J -b -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,MODEL,RM,TRAN,LABEL 2>/dev/null")
+	result := HostExec("lsblk -J -b -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,MODEL,SERIAL,RM,TRAN,LABEL 2>/dev/null")
 	if result.ExitCode != 0 {
 		return scanLinuxStorageFallback()
 	}
@@ -74,6 +75,9 @@ func ParseLsblkJSON(jsonData string) []StorageDevice {
 
 		if bd.Model != nil {
 			dev.Model = strings.TrimSpace(*bd.Model)
+		}
+		if bd.Serial != nil {
+			dev.Serial = strings.TrimSpace(*bd.Serial)
 		}
 		if bd.Tran != nil {
 			dev.Bus = *bd.Tran

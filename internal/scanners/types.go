@@ -8,6 +8,8 @@ type HostScanResult struct {
 	Type         string                            `json:"type"` // "baremetal", "vm", "cloud"
 	Location     string                            `json:"location"`
 	Description  string                            `json:"description"`
+	Source       string                            `json:"source,omitempty"`      // "standalone", "daemonset"
+	HardwareID   string                            `json:"hardware_id,omitempty"` // hash of MACs + disk serials for cross-report correlation
 	System       SystemInfo                        `json:"system"`
 	Network      NetworkInfo                       `json:"network"`
 	Access       AccessInfo                        `json:"access"`
@@ -63,11 +65,13 @@ type DiskInfo struct {
 	Available  string `json:"available"`
 	UsePercent string `json:"use_percent"`
 	Mount      string `json:"mount"`
+	Origin     string `json:"origin,omitempty"` // "local", "network", "virtual"
 }
 
 type StorageDevice struct {
 	Device     string             `json:"device"`
 	Model      string             `json:"model,omitempty"`
+	Serial     string             `json:"serial,omitempty"` // hardware serial for dedup across reports
 	Size       string             `json:"size"`
 	Bus        string             `json:"bus,omitempty"`
 	Removable  bool               `json:"removable"`

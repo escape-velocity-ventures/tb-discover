@@ -33,6 +33,9 @@ func TestParseLsblkJSON_NVMe(t *testing.T) {
 	if nvme.Removable {
 		t.Error("NVMe should not be removable")
 	}
+	if nvme.Serial != "S4EUNG0M812345K" {
+		t.Errorf("expected NVMe serial S4EUNG0M812345K, got %q", nvme.Serial)
+	}
 
 	// NVMe partitions
 	if len(nvme.Partitions) != 2 {
@@ -71,6 +74,9 @@ func TestParseLsblkJSON_NVMe(t *testing.T) {
 	}
 	if sata.Size != "1.8 TB" {
 		t.Errorf("expected 1.8 TB, got %s", sata.Size)
+	}
+	if sata.Serial != "WD-WMC1T0123456" {
+		t.Errorf("expected SATA serial WD-WMC1T0123456, got %q", sata.Serial)
 	}
 
 	// SATA partition

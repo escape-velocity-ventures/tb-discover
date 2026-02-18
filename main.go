@@ -121,11 +121,19 @@ func runScan(cfg *config.Config) {
 
 	hostname := cfg.NodeName
 
+	// Determine reporting source
+	source := "standalone"
+	if cfg.Mode == "k8s" {
+		source = "daemonset"
+	}
+
 	host := scanners.HostScanResult{
 		Name:        hostname,
 		Type:        cfg.HostType,
 		Location:    "",
 		Description: fmt.Sprintf("tb-discover scan of %s", hostname),
+		Source:      source,
+		HardwareID:  scanners.ComputeHardwareID(network, storage),
 		System:      system,
 		Network: scanners.NetworkInfo{
 			Hostname:   hostname,
@@ -151,7 +159,7 @@ func runScan(cfg *config.Config) {
 	}
 
 	durationMs := time.Since(start).Milliseconds()
-	logf("Scan completed in %dms — uploading...", durationMs)
+	logf("Scan completed in %dms (hwid=%s) — uploading...", durationMs, host.HardwareID)
 
 	result := upload.Send(
 		cfg.IngestURL,
@@ -193,6 +201,8 @@ func doDryRun(nodeName, hostType string) {
 		Name:        nodeName,
 		Type:        hostType,
 		Description: fmt.Sprintf("tb-discover scan of %s", nodeName),
+		Source:      "standalone",
+		HardwareID:  scanners.ComputeHardwareID(network, storage),
 		System:      system,
 		Network: scanners.NetworkInfo{
 			Hostname:   nodeName,
@@ -218,7 +228,7 @@ func doDryRun(nodeName, hostType string) {
 	}
 
 	durationMs := time.Since(start).Milliseconds()
-	logf("Scan completed in %dms", durationMs)
+	logf("Scan completed in %dms (hwid=%s)", durationMs, host.HardwareID)
 
 	out, _ := json.MarshalIndent(host, "", "  ")
 	fmt.Println(string(out))
