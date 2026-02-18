@@ -3,6 +3,7 @@ package upload
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,6 +37,11 @@ type Result struct {
 
 var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
+	Transport: &http.Transport{
+		// Force HTTP/1.1 — Go's HTTP/2 client can hang on POST requests
+		// to Cloudflare-fronted endpoints (Supabase) on macOS.
+		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+	},
 }
 
 // Send posts scan results to the edge-ingest endpoint.

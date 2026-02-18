@@ -151,7 +151,40 @@ func scanDarwinNetwork() []NetworkInterface {
 		interfaces = append(interfaces, *current)
 	}
 
-	return interfaces
+	// Filter out macOS virtual/system interfaces
+	var filtered []NetworkInterface
+	for _, iface := range interfaces {
+		if isDarwinVirtualInterface(iface.Name) {
+			continue
+		}
+		filtered = append(filtered, iface)
+	}
+
+	return filtered
+}
+
+// isDarwinVirtualInterface returns true for macOS system/virtual interfaces
+// that don't carry user traffic.
+func isDarwinVirtualInterface(name string) bool {
+	prefixes := []string{
+		"anpi",    // Apple Network Protocol Interface
+		"ap",      // Apple Wireless Direct Link peer
+		"awdl",    // Apple Wireless Direct Link
+		"bridge",  // Software bridge
+		"gif",     // Generic tunnel interface
+		"llw",     // Low Latency WLAN
+		"stf",     // 6to4 tunnel
+		"utun",    // User-space tunnel (VPN, macOS system)
+		"XHC",     // USB Host Controller
+		"pktap",   // Packet tap
+		"vmenet",  // macOS Virtualization.framework
+	}
+	for _, p := range prefixes {
+		if strings.HasPrefix(name, p) {
+			return true
+		}
+	}
+	return false
 }
 
 func guessInterfaceType(name string) string {
@@ -166,7 +199,11 @@ func guessInterfaceType(name string) string {
 		return "bridge"
 	case strings.HasPrefix(name, "tun") || strings.HasPrefix(name, "wg") || strings.HasPrefix(name, "tailscale"):
 		return "tunnel"
+	case strings.HasPrefix(name, "utun"):
+		return "tunnel"
 	case strings.HasPrefix(name, "veth") || strings.HasPrefix(name, "cali") || strings.HasPrefix(name, "flannel"):
+		return "virtual"
+	case strings.HasPrefix(name, "awdl") || strings.HasPrefix(name, "llw") || strings.HasPrefix(name, "anpi"):
 		return "virtual"
 	default:
 		return "other"

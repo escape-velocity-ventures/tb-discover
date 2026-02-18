@@ -236,5 +236,5 @@ func doDryRun(nodeName, hostType string) {
 
 func logf(format string, args ...interface{}) {
 	ts := time.Now().UTC().Format(time.RFC3339)
-	fmt.Printf("[tb-discover] %s %s\n", ts, fmt.Sprintf(format, args...))
+	fmt.Fprintf(os.Stderr, "[tb-discover] %s %s\n", ts, fmt.Sprintf(format, args...))
 }

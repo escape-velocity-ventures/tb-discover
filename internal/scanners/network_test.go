@@ -124,6 +124,22 @@ func TestGuessInterfaceType(t *testing.T) {
 	}
 }
 
+func TestIsDarwinVirtualInterface(t *testing.T) {
+	virtual := []string{"anpi0", "anpi1", "ap1", "awdl0", "bridge0", "gif0", "llw0", "stf0", "utun0", "utun3", "XHC0", "pktap0"}
+	for _, name := range virtual {
+		if !isDarwinVirtualInterface(name) {
+			t.Errorf("expected %q to be virtual", name)
+		}
+	}
+
+	physical := []string{"en0", "en1", "eth0", "lo0", "wlan0", "tailscale0", "docker0"}
+	for _, name := range physical {
+		if isDarwinVirtualInterface(name) {
+			t.Errorf("expected %q to NOT be virtual", name)
+		}
+	}
+}
+
 func findIface(ifaces []NetworkInterface, name string) *NetworkInterface {
 	for i := range ifaces {
 		if ifaces[i].Name == name {

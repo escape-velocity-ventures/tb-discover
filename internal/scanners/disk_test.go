@@ -2,6 +2,7 @@ package scanners
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -121,6 +122,71 @@ func TestParseDf_NetworkOrigin(t *testing.T) {
 	if disks[2].Origin != "local" {
 		t.Errorf("/dev/ mount should have origin local, got %s", disks[2].Origin)
 	}
+}
+
+func TestParseDf_MacOS(t *testing.T) {
+	output := loadTestData(t, "df-macos.txt")
+	disks := ParseDf(output)
+
+	// Expected: /, /Volumes/Media, /Volumes/Untitled, /Volumes/TESLADRIVE,
+	// /Volumes/Vox 0.2.0, /Volumes/Backups of plato 1
+	// Filtered: devfs, /System/*, map auto_home, CoreSimulator (x4),
+	//           CloudEdge (/private/var/folders), Time Machine (x3),
+	//           com.apple.TimeMachine.* (x2)
+	expectedMounts := []string{
+		"/",
+		"/Volumes/Media",
+		"/Volumes/Untitled",
+		"/Volumes/TESLADRIVE",
+		"/Volumes/Vox 0.2.0",
+		"/Volumes/Backups of plato 1",
+	}
+
+	if len(disks) != len(expectedMounts) {
+		t.Fatalf("expected %d disks, got %d:", len(expectedMounts), len(disks))
+		for _, d := range disks {
+			t.Logf("  %s → %s", d.Filesystem, d.Mount)
+		}
+	}
+
+	for i, expected := range expectedMounts {
+		if disks[i].Mount != expected {
+			t.Errorf("disk[%d]: expected mount %q, got %q", i, expected, disks[i].Mount)
+		}
+	}
+
+	// Verify mount points with spaces are parsed correctly
+	vox := findDisk(disks, "/Volumes/Vox 0.2.0")
+	if vox == nil {
+		t.Fatal("mount with spaces '/Volumes/Vox 0.2.0' not found")
+	}
+	if vox.Filesystem != "/dev/disk19s1" {
+		t.Errorf("Vox filesystem: expected /dev/disk19s1, got %s", vox.Filesystem)
+	}
+
+	backups := findDisk(disks, "/Volumes/Backups of plato 1")
+	if backups == nil {
+		t.Fatal("mount with spaces '/Volumes/Backups of plato 1' not found")
+	}
+	if backups.Size != "15Ti" {
+		t.Errorf("Backups size: expected 15Ti, got %s", backups.Size)
+	}
+
+	// Time Machine network share should be filtered
+	for _, d := range disks {
+		if strings.Contains(d.Mount, ".timemachine") {
+			t.Errorf("Time Machine mount should be filtered: %s", d.Mount)
+		}
+	}
+}
+
+func findDisk(disks []DiskInfo, mount string) *DiskInfo {
+	for i := range disks {
+		if disks[i].Mount == mount {
+			return &disks[i]
+		}
+	}
+	return nil
 }
 
 func TestClassifyDiskOrigin(t *testing.T) {
