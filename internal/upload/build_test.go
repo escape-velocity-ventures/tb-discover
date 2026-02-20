@@ -57,9 +57,9 @@ func TestBuildRequestHostMapping(t *testing.T) {
 		t.Errorf("memory_gb = %f, want 32", req.Host.System.MemoryGB)
 	}
 
-	// Check interfaces — only those with IPs should be included
-	if len(req.Host.Network.Interfaces) != 2 {
-		t.Errorf("expected 2 interfaces with IPs, got %d", len(req.Host.Network.Interfaces))
+	// Check interfaces — all interfaces included (sysfs may lack IPs)
+	if len(req.Host.Network.Interfaces) != 3 {
+		t.Errorf("expected 3 interfaces, got %d", len(req.Host.Network.Interfaces))
 	}
 
 	// Check hostname

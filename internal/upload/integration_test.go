@@ -192,9 +192,9 @@ func TestFullScanToEdgeIngestContract(t *testing.T) {
 		if !ok {
 			t.Fatal("host.network.interfaces is not an array")
 		}
-		// Only interfaces with IPs should be included
-		if len(ifaces) != 2 {
-			t.Errorf("expected 2 interfaces (with IPs only), got %d", len(ifaces))
+		// All interfaces included (sysfs may lack IPs)
+		if len(ifaces) != 3 {
+			t.Errorf("expected 3 interfaces, got %d", len(ifaces))
 		}
 
 		// First interface should have name, ip, mac
