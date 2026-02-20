@@ -13,14 +13,18 @@ import (
 )
 
 var (
-	flagClusterID      string
-	flagIdleTimeout    time.Duration
-	flagScanInterval   time.Duration
-	flagDaemonProfile  string
-	flagGatewayURL     string
-	flagSaaSURL        string
-	flagPermissions    []string
-	flagMaxSessions    int
+	flagClusterID           string
+	flagIdleTimeout         time.Duration
+	flagScanInterval        time.Duration
+	flagDaemonProfile       string
+	flagGatewayURL          string
+	flagSaaSURL             string
+	flagPermissions         []string
+	flagMaxSessions         int
+	flagExcludeNamespaces   []string
+	flagMaxRemediations     int
+	flagRemediationCooldown time.Duration
+	flagDryRun              bool
 )
 
 var daemonCmd = &cobra.Command{
@@ -48,6 +52,10 @@ func init() {
 	daemonCmd.Flags().StringVar(&flagSaaSURL, "saas-url", "", "SaaS base URL for upload (env: TB_URL, defaults to --url)")
 	daemonCmd.Flags().StringSliceVar(&flagPermissions, "permissions", []string{"scan"}, "Agent permissions: scan, terminal")
 	daemonCmd.Flags().IntVar(&flagMaxSessions, "max-sessions", 10, "Maximum concurrent terminal sessions")
+	daemonCmd.Flags().StringSliceVar(&flagExcludeNamespaces, "exclude-namespaces", nil, "Comma-separated namespaces to exclude from k8s scanning (env: EXCLUDE_NAMESPACES)")
+	daemonCmd.Flags().IntVar(&flagMaxRemediations, "max-remediations-per-hour", 10, "Circuit breaker: max auto-remediations per hour")
+	daemonCmd.Flags().DurationVar(&flagRemediationCooldown, "remediation-cooldown", 30*time.Minute, "Per-resource cooldown between remediations")
+	daemonCmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "Remediation dry-run mode (log actions without executing)")
 	rootCmd.AddCommand(daemonCmd)
 }
 
@@ -72,6 +80,12 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		permissions = cfg.Permissions
 	}
 
+	// Resolve namespace exclusions: flag > config > defaults
+	excludeNS := flagExcludeNamespaces
+	if !cmd.Flags().Changed("exclude-namespaces") && cfg != nil && len(cfg.ExcludeNamespaces) > 0 {
+		excludeNS = cfg.ExcludeNamespaces
+	}
+
 	// Build scan loop config
 	var scanCfg *agent.ScanLoopConfig
 
@@ -81,20 +95,42 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("parse TB_UPSTREAMS: %w", err)
 		}
+
+		// Safety: at most 1 upstream may have "remediate" permission (prevents split-brain)
+		remediateCount := 0
+		for _, u := range upstreams {
+			for _, p := range u.Permissions {
+				if p == "remediate" {
+					remediateCount++
+				}
+			}
+		}
+		if remediateCount > 1 {
+			return fmt.Errorf("at most 1 upstream may have 'remediate' permission (found %d) — prevents split-brain remediation", remediateCount)
+		}
+
 		scanCfg = &agent.ScanLoopConfig{
-			Profile:   flagDaemonProfile,
-			Interval:  flagScanInterval,
-			Upstreams: upstreams,
-			Version:   rootCmd.Version,
+			Profile:                flagDaemonProfile,
+			Interval:               flagScanInterval,
+			Upstreams:              upstreams,
+			Version:                rootCmd.Version,
+			ExcludeNamespaces:      excludeNS,
+			MaxRemediationsPerHour: flagMaxRemediations,
+			RemediationCooldown:    flagRemediationCooldown,
+			DryRun:                 flagDryRun,
 		}
 	} else if saasURL != "" {
 		scanCfg = &agent.ScanLoopConfig{
-			Profile:   flagDaemonProfile,
-			Interval:  flagScanInterval,
-			UploadURL: saasURL,
-			Token:     token,
-			AnonKey:   resolveAnonKey(),
-			Version:   rootCmd.Version,
+			Profile:                flagDaemonProfile,
+			Interval:               flagScanInterval,
+			UploadURL:              saasURL,
+			Token:                  token,
+			AnonKey:                resolveAnonKey(),
+			Version:                rootCmd.Version,
+			ExcludeNamespaces:      excludeNS,
+			MaxRemediationsPerHour: flagMaxRemediations,
+			RemediationCooldown:    flagRemediationCooldown,
+			DryRun:                 flagDryRun,
 		}
 	}
 

@@ -1,5 +1,10 @@
 package scanner
 
+// RegistryOptions configures scanner construction.
+type RegistryOptions struct {
+	ExcludeNamespaces []string
+}
+
 // Registry maps profiles to their scanners.
 type Registry struct {
 	scanners map[Profile][]Scanner
@@ -7,8 +12,21 @@ type Registry struct {
 
 // NewRegistry creates a registry with all known scanners assigned to profiles.
 func NewRegistry() *Registry {
+	return NewRegistryWithOptions(RegistryOptions{})
+}
+
+// NewRegistryWithOptions creates a registry with custom options.
+func NewRegistryWithOptions(opts RegistryOptions) *Registry {
 	r := &Registry{
 		scanners: make(map[Profile][]Scanner),
+	}
+
+	// Build k8s scanner with exclusion config
+	var k8s *K8sScanner
+	if len(opts.ExcludeNamespaces) > 0 {
+		k8s = NewK8sScannerWithExclusions(opts.ExcludeNamespaces)
+	} else {
+		k8s = NewK8sScanner()
 	}
 
 	// Minimal: just host info
@@ -25,7 +43,7 @@ func NewRegistry() *Registry {
 	// Full: standard + containers + k8s + power + iot
 	full := append(standard,
 		NewContainerScanner(),
-		NewK8sScanner(),
+		k8s,
 		NewPowerScanner(),
 		NewIoTScanner(),
 	)

@@ -83,17 +83,41 @@ kind: ClusterRole
 metadata:
   name: tb-discover
 rules:
+  # Read access for scanning + analysis
   - apiGroups: [""]
-    resources: ["nodes", "namespaces", "pods", "services", "persistentvolumeclaims", "configmaps"]
+    resources: ["nodes", "namespaces", "services", "configmaps", "secrets"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list"]
+  # Pods: read + delete (for remediation + commands)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+  # PVCs: read + delete (for stale PV affinity remediation + commands)
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "delete"]
+  # Deployments/StatefulSets/DaemonSets: read + patch (for restart, scale, tune)
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "patch"]
+  # Scale subresource for deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "update"]
+  # Nodes: patch (for cordon/uncordon)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["patch"]
   - apiGroups: ["batch"]
     resources: ["jobs", "cronjobs"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["kustomize.toolkit.fluxcd.io"]
     resources: ["kustomizations"]

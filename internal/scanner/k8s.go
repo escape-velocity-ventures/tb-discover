@@ -23,24 +23,38 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Namespaces to skip during scanning.
-var skipNamespaces = map[string]bool{
-	"local-path-storage": true,
+// DefaultExcludeNamespaces are skipped unless overridden.
+var DefaultExcludeNamespaces = []string{
+	"kube-system",
+	"kube-public",
+	"kube-node-lease",
+	"local-path-storage",
 }
 
 // K8sScanner discovers Kubernetes cluster resources using client-go.
-type K8sScanner struct{}
+type K8sScanner struct {
+	ExcludeNamespaces map[string]bool
+}
 
-// NewK8sScanner creates a new K8sScanner.
+// NewK8sScanner creates a K8sScanner with default exclusions.
 func NewK8sScanner() *K8sScanner {
-	return &K8sScanner{}
+	return NewK8sScannerWithExclusions(DefaultExcludeNamespaces)
+}
+
+// NewK8sScannerWithExclusions creates a K8sScanner with custom namespace exclusions.
+func NewK8sScannerWithExclusions(exclude []string) *K8sScanner {
+	m := make(map[string]bool, len(exclude))
+	for _, ns := range exclude {
+		m[ns] = true
+	}
+	return &K8sScanner{ExcludeNamespaces: m}
 }
 
 func (s *K8sScanner) Name() string       { return "cluster" }
 func (s *K8sScanner) Platforms() []string { return nil }
 
 func (s *K8sScanner) Scan(ctx context.Context, _ CommandRunner) (json.RawMessage, error) {
-	config, err := getK8sConfig()
+	config, err := GetK8sConfig()
 	if err != nil {
 		return nil, fmt.Errorf("k8s config: %w", err)
 	}
@@ -89,7 +103,7 @@ func (s *K8sScanner) Scan(ctx context.Context, _ CommandRunner) (json.RawMessage
 	}
 
 	for _, ns := range nsList.Items {
-		if skipNamespaces[ns.Name] {
+		if s.ExcludeNamespaces[ns.Name] {
 			continue
 		}
 		nsResult, err := scanNamespace(ctx, clientset, ns)
@@ -106,8 +120,8 @@ func (s *K8sScanner) Scan(ctx context.Context, _ CommandRunner) (json.RawMessage
 	return json.Marshal(result)
 }
 
-// getK8sConfig returns in-cluster config or falls back to kubeconfig.
-func getK8sConfig() (*rest.Config, error) {
+// GetK8sConfig returns in-cluster config or falls back to kubeconfig.
+func GetK8sConfig() (*rest.Config, error) {
 	// Try in-cluster first
 	config, err := rest.InClusterConfig()
 	if err == nil {

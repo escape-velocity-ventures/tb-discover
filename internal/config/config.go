@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -9,12 +10,13 @@ import (
 
 // Config holds all tb-discover configuration.
 type Config struct {
-	Token        string        `yaml:"token"`
-	URL          string        `yaml:"url"`
-	Profile      string        `yaml:"profile"`
-	ScanInterval time.Duration `yaml:"scan_interval"`
-	LogLevel     string        `yaml:"log_level"`
-	Permissions  []string      `yaml:"permissions"` // e.g., ["terminal", "scan"]
+	Token             string        `yaml:"token"`
+	URL               string        `yaml:"url"`
+	Profile           string        `yaml:"profile"`
+	ScanInterval      time.Duration `yaml:"scan_interval"`
+	LogLevel          string        `yaml:"log_level"`
+	Permissions       []string      `yaml:"permissions"`        // e.g., ["terminal", "scan"]
+	ExcludeNamespaces []string      `yaml:"exclude_namespaces"` // namespaces to skip during k8s scan
 }
 
 // DefaultConfig returns sensible defaults.
@@ -57,6 +59,16 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("TB_LOG_LEVEL"); v != "" {
 		cfg.LogLevel = v
+	}
+	if v := os.Getenv("EXCLUDE_NAMESPACES"); v != "" {
+		var ns []string
+		for _, s := range strings.Split(v, ",") {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				ns = append(ns, s)
+			}
+		}
+		cfg.ExcludeNamespaces = ns
 	}
 
 	return cfg, nil
