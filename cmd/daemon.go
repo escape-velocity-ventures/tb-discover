@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tinkerbelle-io/tb-discover/internal/agent"
 	"github.com/tinkerbelle-io/tb-discover/internal/config"
 	"github.com/tinkerbelle-io/tb-discover/internal/logging"
+	"github.com/tinkerbelle-io/tb-discover/internal/upload"
 )
 
 var (
@@ -72,12 +74,26 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 
 	// Build scan loop config
 	var scanCfg *agent.ScanLoopConfig
-	if saasURL != "" {
+
+	// Multi-upstream via TB_UPSTREAMS takes priority
+	if upstreamsJSON := resolveUpstreams(); upstreamsJSON != "" {
+		upstreams, err := upload.ParseUpstreams(upstreamsJSON)
+		if err != nil {
+			return fmt.Errorf("parse TB_UPSTREAMS: %w", err)
+		}
+		scanCfg = &agent.ScanLoopConfig{
+			Profile:   flagDaemonProfile,
+			Interval:  flagScanInterval,
+			Upstreams: upstreams,
+			Version:   rootCmd.Version,
+		}
+	} else if saasURL != "" {
 		scanCfg = &agent.ScanLoopConfig{
 			Profile:   flagDaemonProfile,
 			Interval:  flagScanInterval,
 			UploadURL: saasURL,
 			Token:     token,
+			AnonKey:   resolveAnonKey(),
 			Version:   rootCmd.Version,
 		}
 	}

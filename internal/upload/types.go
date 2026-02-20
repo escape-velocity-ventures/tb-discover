@@ -70,3 +70,22 @@ type EdgeIngestResponse struct {
 	ResourceCount int      `json:"resource_count"`
 	Phases        []string `json:"phases"`
 }
+
+// Upstream defines a single SaaS target (staging, production, etc.).
+// Matches the tb-agent UPSTREAMS JSON format.
+type Upstream struct {
+	Name        string   `json:"name"`
+	URL         string   `json:"url"`
+	Token       string   `json:"token"`
+	AnonKey     string   `json:"anonKey"`
+	Permissions []string `json:"permissions,omitempty"`
+}
+
+// ParseUpstreams parses a JSON array of upstream configs.
+func ParseUpstreams(data string) ([]Upstream, error) {
+	var upstreams []Upstream
+	if err := json.Unmarshal([]byte(data), &upstreams); err != nil {
+		return nil, err
+	}
+	return upstreams, nil
+}

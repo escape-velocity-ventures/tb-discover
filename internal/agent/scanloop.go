@@ -12,19 +12,20 @@ import (
 
 // ScanLoopConfig configures the periodic scan loop.
 type ScanLoopConfig struct {
-	Profile   string
-	Interval  time.Duration
-	UploadURL string // Supabase base URL for edge-ingest
-	Token     string // agent_token
-	AnonKey   string // Supabase anon key
-	Version   string // binary version
+	Profile     string
+	Interval    time.Duration
+	UploadURL   string // Supabase base URL for edge-ingest (single mode)
+	Token       string // agent_token (single mode)
+	AnonKey     string // Supabase anon key (single mode)
+	Upstreams   []upload.Upstream // Multi-upstream mode
+	Version     string // binary version
 }
 
 // ScanLoop runs periodic infrastructure scans and uploads results.
 type ScanLoop struct {
-	cfg    ScanLoopConfig
-	log    *slog.Logger
-	client *upload.Client
+	cfg      ScanLoopConfig
+	log      *slog.Logger
+	uploader upload.Uploader
 }
 
 // NewScanLoop creates a new scan loop.
@@ -34,8 +35,10 @@ func NewScanLoop(cfg ScanLoopConfig, logger *slog.Logger) *ScanLoop {
 		log: logger.With("component", "scanloop"),
 	}
 
-	if cfg.UploadURL != "" && cfg.Token != "" {
-		sl.client = upload.NewClient(cfg.UploadURL, cfg.Token, cfg.AnonKey)
+	if len(cfg.Upstreams) > 0 {
+		sl.uploader = upload.NewMultiClient(cfg.Upstreams)
+	} else if cfg.UploadURL != "" && cfg.Token != "" {
+		sl.uploader = upload.NewClient(cfg.UploadURL, cfg.Token, cfg.AnonKey)
 	}
 
 	return sl
@@ -47,7 +50,7 @@ func (sl *ScanLoop) Run(ctx context.Context) {
 	sl.log.Info("scan loop starting",
 		"profile", sl.cfg.Profile,
 		"interval", sl.cfg.Interval,
-		"upload", sl.client != nil,
+		"upload", sl.uploader != nil,
 	)
 
 	// Initial scan immediately
@@ -119,7 +122,7 @@ func (sl *ScanLoop) runScan(ctx context.Context) {
 	)
 
 	// Upload if configured
-	if sl.client != nil {
+	if sl.uploader != nil {
 		sl.uploadResult(ctx, result)
 	}
 }
@@ -127,9 +130,8 @@ func (sl *ScanLoop) runScan(ctx context.Context) {
 // uploadResult sends scan results to edge-ingest.
 func (sl *ScanLoop) uploadResult(ctx context.Context, result *scanner.Result) {
 	req := upload.BuildRequest(result)
-	req.AgentToken = sl.cfg.Token
 
-	resp, err := sl.client.Upload(ctx, req)
+	resp, err := sl.uploader.Upload(ctx, req)
 	if err != nil {
 		sl.log.Error("upload failed", "error", err)
 		return

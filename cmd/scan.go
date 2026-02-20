@@ -195,14 +195,27 @@ func runSSHScan(ctx context.Context, scanners []scanner.Scanner, profile scanner
 }
 
 func uploadResult(ctx context.Context, result *scanner.Result) error {
+	req := upload.BuildRequest(result)
+
+	// Multi-upstream mode: TB_UPSTREAMS JSON array
+	if upstreamsJSON := resolveUpstreams(); upstreamsJSON != "" {
+		upstreams, err := upload.ParseUpstreams(upstreamsJSON)
+		if err != nil {
+			return fmt.Errorf("parse TB_UPSTREAMS: %w", err)
+		}
+		mc := upload.NewMultiClient(upstreams)
+		_, err = mc.Upload(ctx, req)
+		return err
+	}
+
+	// Single upstream mode: --token/--url/--anon-key
 	token := resolveToken()
 	url := resolveURL()
 	anonKey := resolveAnonKey()
 	if token == "" || url == "" {
-		return fmt.Errorf("--token/TB_TOKEN and --url/TB_URL required for upload")
+		return fmt.Errorf("--token/TB_TOKEN and --url/TB_URL (or TB_UPSTREAMS) required for upload")
 	}
 
-	req := upload.BuildRequest(result)
 	req.AgentToken = token
 	client := upload.NewClient(url, token, anonKey)
 	resp, err := client.Upload(ctx, req)

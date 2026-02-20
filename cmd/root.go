@@ -66,6 +66,11 @@ func resolveAnonKey() string {
 	return os.Getenv("TB_ANON_KEY")
 }
 
+// resolveUpstreams returns the upstreams JSON from environment.
+func resolveUpstreams() string {
+	return os.Getenv("TB_UPSTREAMS")
+}
+
 // lookupEnv wraps os.LookupEnv.
 func lookupEnv(key string) (string, bool) {
 	return os.LookupEnv(key)

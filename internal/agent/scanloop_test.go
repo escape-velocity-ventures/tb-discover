@@ -78,8 +78,8 @@ func TestScanLoopNoUploadWithoutClient(t *testing.T) {
 		// No UploadURL or Token — client will be nil
 	}, logger)
 
-	if sl.client != nil {
-		t.Error("expected nil client when no upload URL configured")
+	if sl.uploader != nil {
+		t.Error("expected nil uploader when no upload URL configured")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
