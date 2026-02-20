@@ -30,7 +30,8 @@ func BuildRequest(result *scanner.Result) *EdgeIngestRequest {
 					MemoryGB: hostInfo.System.MemoryGB,
 				},
 				Network: HostNetwork{
-					Hostname: hostInfo.Name,
+					Hostname:   hostInfo.Name,
+					Interfaces: []HostInterface{},
 				},
 			}
 
@@ -39,13 +40,11 @@ func BuildRequest(result *scanner.Result) *EdgeIngestRequest {
 				if err := json.Unmarshal(result.Network, &netInfo); err == nil {
 					host.Network.Hostname = netInfo.Hostname
 					for _, iface := range netInfo.Interfaces {
-						if iface.IP != "" {
-							host.Network.Interfaces = append(host.Network.Interfaces, HostInterface{
-								Name: iface.Name,
-								IP:   iface.IP,
-								MAC:  iface.MAC,
-							})
-						}
+						host.Network.Interfaces = append(host.Network.Interfaces, HostInterface{
+							Name: iface.Name,
+							IP:   iface.IP,
+							MAC:  iface.MAC,
+						})
 					}
 				}
 			}
