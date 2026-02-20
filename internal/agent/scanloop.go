@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/tinkerbelle-io/tb-discover/internal/commands"
@@ -171,7 +170,7 @@ func (sl *ScanLoop) runScan(ctx context.Context) {
 	// Apply topology inference
 	scanner.ApplyTopology(result)
 
-	hostname, _ := os.Hostname()
+	hostname := nodeHostname()
 	result.Meta.Version = sl.cfg.Version
 	result.Meta.DurationMS = int(time.Since(start).Milliseconds())
 	result.Meta.Profile = sl.cfg.Profile

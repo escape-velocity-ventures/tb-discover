@@ -17,6 +17,16 @@ import (
 	"github.com/tinkerbelle-io/tb-discover/internal/terminal"
 )
 
+// nodeHostname returns the Kubernetes node name (NODE_NAME env) if set,
+// falling back to os.Hostname() for non-k8s environments.
+func nodeHostname() string {
+	if n := os.Getenv("NODE_NAME"); n != "" {
+		return n
+	}
+	h, _ := os.Hostname()
+	return h
+}
+
 // Agent manages the WebSocket connection, terminal sessions, and scan loop.
 type Agent struct {
 	conn        *websocket.Conn
@@ -56,7 +66,7 @@ type Config struct {
 
 // New creates a new Agent (does not connect yet).
 func New(cfg Config) *Agent {
-	hostname, _ := os.Hostname()
+	hostname := nodeHostname()
 	logger := slog.Default().With("component", "agent", "host", hostname)
 
 	perms := make(map[string]bool)
