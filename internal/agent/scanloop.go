@@ -24,6 +24,9 @@ type ScanLoopConfig struct {
 	Version           string            // binary version
 	ExcludeNamespaces []string          // namespaces to skip during k8s scan
 
+	// Controller mode: skip host scan upload (DaemonSet handles that)
+	SkipUpload bool
+
 	// Remediation
 	MaxRemediationsPerHour int
 	RemediationCooldown    time.Duration
@@ -182,8 +185,8 @@ func (sl *ScanLoop) runScan(ctx context.Context) {
 		"inferred_role", result.Meta.InferredRole,
 	)
 
-	// Upload if configured
-	if sl.uploader != nil {
+	// Upload if configured (controller mode skips this — DaemonSet handles host uploads)
+	if sl.uploader != nil && !sl.cfg.SkipUpload {
 		sl.uploadResult(ctx, result)
 	}
 

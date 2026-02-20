@@ -25,6 +25,7 @@ var (
 	flagMaxRemediations     int
 	flagRemediationCooldown time.Duration
 	flagDryRun              bool
+	flagSkipUpload          bool
 )
 
 var daemonCmd = &cobra.Command{
@@ -56,6 +57,7 @@ func init() {
 	daemonCmd.Flags().IntVar(&flagMaxRemediations, "max-remediations-per-hour", 10, "Circuit breaker: max auto-remediations per hour")
 	daemonCmd.Flags().DurationVar(&flagRemediationCooldown, "remediation-cooldown", 30*time.Minute, "Per-resource cooldown between remediations")
 	daemonCmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "Remediation dry-run mode (log actions without executing)")
+	daemonCmd.Flags().BoolVar(&flagSkipUpload, "skip-upload", false, "Skip host scan upload (controller mode — DaemonSet handles host reporting)")
 	rootCmd.AddCommand(daemonCmd)
 }
 
@@ -115,6 +117,7 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 			Upstreams:              upstreams,
 			Version:                rootCmd.Version,
 			ExcludeNamespaces:      excludeNS,
+			SkipUpload:             flagSkipUpload,
 			MaxRemediationsPerHour: flagMaxRemediations,
 			RemediationCooldown:    flagRemediationCooldown,
 			DryRun:                 flagDryRun,
@@ -128,6 +131,7 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 			AnonKey:                resolveAnonKey(),
 			Version:                rootCmd.Version,
 			ExcludeNamespaces:      excludeNS,
+			SkipUpload:             flagSkipUpload,
 			MaxRemediationsPerHour: flagMaxRemediations,
 			RemediationCooldown:    flagRemediationCooldown,
 			DryRun:                 flagDryRun,
