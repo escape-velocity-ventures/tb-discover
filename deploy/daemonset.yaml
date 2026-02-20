@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tb-discover
+  namespace: tinkerbelle
+  labels:
+    app.kubernetes.io/name: tb-discover
+    app.kubernetes.io/component: agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tb-discover
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tb-discover
+        app.kubernetes.io/component: agent
+    spec:
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: tb-discover
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: tb-discover
+          image: ghcr.io/escape-velocity-ventures/tb-discover:latest
+          args:
+            - daemon
+            - --profile=full
+          env:
+            - name: TB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tb-discover-token
+                  key: token
+            - name: TB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tb-discover-config
+                  key: url
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tb-discover
+  namespace: tinkerbelle
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tb-discover
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces", "pods", "services", "persistentvolumeclaims", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources: ["kustomizations"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["source.toolkit.fluxcd.io"]
+    resources: ["gitrepositories", "helmrepositories"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources: ["helmreleases"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tb-discover
+subjects:
+  - kind: ServiceAccount
+    name: tb-discover
+    namespace: tinkerbelle
+roleRef:
+  kind: ClusterRole
+  name: tb-discover
+  apiGroup: rbac.authorization.k8s.io

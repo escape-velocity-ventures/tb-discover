@@ -1,77 +1,63 @@
-// Package config handles configuration for tb-discover.
 package config
 
 import (
-	"fmt"
 	"os"
-	"strconv"
+	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Config holds all tb-discover configuration.
 type Config struct {
-	AgentToken          string
-	IngestURL           string
-	AnonKey             string
-	ScanIntervalSeconds int
-	NodeName            string
-	Mode                string // "daemon", "oneshot", "k8s"
-	Profile             string // "minimal", "standard", "full"
-	HostType            string // "baremetal", "vm", "cloud"
+	Token        string        `yaml:"token"`
+	URL          string        `yaml:"url"`
+	Profile      string        `yaml:"profile"`
+	ScanInterval time.Duration `yaml:"scan_interval"`
+	LogLevel     string        `yaml:"log_level"`
+	Permissions  []string      `yaml:"permissions"` // e.g., ["terminal", "scan"]
 }
 
-// Load reads configuration from environment variables.
-// Config file support (YAML) will be added in a future phase.
-func Load() (*Config, error) {
-	token := os.Getenv("AGENT_TOKEN")
-	if token == "" {
-		return nil, fmt.Errorf("AGENT_TOKEN environment variable is required")
+// DefaultConfig returns sensible defaults.
+func DefaultConfig() *Config {
+	return &Config{
+		Profile:      "standard",
+		ScanInterval: 5 * time.Minute,
+		LogLevel:     "info",
+		Permissions:  []string{"scan"},
 	}
+}
 
-	ingestURL := os.Getenv("INGEST_URL")
-	if ingestURL == "" {
-		return nil, fmt.Errorf("INGEST_URL environment variable is required")
-	}
+// Load reads a YAML config file and overlays environment variables.
+func Load(path string) (*Config, error) {
+	cfg := DefaultConfig()
 
-	anonKey := os.Getenv("ANON_KEY")
-	if anonKey == "" {
-		return nil, fmt.Errorf("ANON_KEY environment variable is required")
-	}
-
-	interval := 1800
-	if v := os.Getenv("SCAN_INTERVAL_SECONDS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			interval = n
+	if path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return nil, err
+			}
+			// File doesn't exist, use defaults
+		} else {
+			if err := yaml.Unmarshal(data, cfg); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	nodeName := os.Getenv("NODE_NAME")
-	if nodeName == "" {
-		nodeName = "auto"
+	// Environment variable overrides
+	if v := os.Getenv("TB_TOKEN"); v != "" {
+		cfg.Token = v
+	}
+	if v := os.Getenv("TB_URL"); v != "" {
+		cfg.URL = v
+	}
+	if v := os.Getenv("TB_PROFILE"); v != "" {
+		cfg.Profile = v
+	}
+	if v := os.Getenv("TB_LOG_LEVEL"); v != "" {
+		cfg.LogLevel = v
 	}
 
-	mode := os.Getenv("DISCOVER_MODE")
-	if mode == "" {
-		mode = "daemon"
-	}
-
-	profile := os.Getenv("SCAN_PROFILE")
-	if profile == "" {
-		profile = "full"
-	}
-
-	hostType := os.Getenv("HOST_TYPE")
-	if hostType == "" {
-		hostType = "baremetal"
-	}
-
-	return &Config{
-		AgentToken:          token,
-		IngestURL:           ingestURL,
-		AnonKey:             anonKey,
-		ScanIntervalSeconds: interval,
-		NodeName:            nodeName,
-		Mode:                mode,
-		Profile:             profile,
-		HostType:            hostType,
-	}, nil
+	return cfg, nil
 }
