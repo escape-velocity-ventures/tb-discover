@@ -40,8 +40,9 @@ type Agent struct {
 	writeMu     sync.Mutex
 
 	// Permissions
-	permissions map[string]bool
-	maxSessions int
+	permissions  map[string]bool
+	maxSessions  int
+	shellCommand []string
 
 	// Scan loop
 	scanLoop *ScanLoop
@@ -62,6 +63,7 @@ type Config struct {
 	ScanConfig   *ScanLoopConfig // nil = no scan loop
 	Permissions  []string        // e.g., ["terminal", "scan"]
 	MaxSessions  int             // 0 = DefaultMaxSessions
+	ShellCommand []string        // Custom shell command (e.g., ["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--", "/bin/bash"])
 }
 
 // New creates a new Agent (does not connect yet).
@@ -80,15 +82,16 @@ func New(cfg Config) *Agent {
 	}
 
 	a := &Agent{
-		sessions:    make(map[string]*terminal.PTYSession),
-		idleTimeout: cfg.IdleTimeout,
-		clusterID:   cfg.ClusterID,
-		agentID:     hostname,
-		wsURL:       cfg.WSURL,
-		token:       cfg.Token,
-		permissions: perms,
-		maxSessions: maxSessions,
-		log:         logger,
+		sessions:     make(map[string]*terminal.PTYSession),
+		idleTimeout:  cfg.IdleTimeout,
+		clusterID:    cfg.ClusterID,
+		agentID:      hostname,
+		wsURL:        cfg.WSURL,
+		token:        cfg.Token,
+		permissions:  perms,
+		maxSessions:  maxSessions,
+		shellCommand: cfg.ShellCommand,
+		log:          logger,
 	}
 
 	if cfg.ScanConfig != nil {
@@ -134,7 +137,15 @@ func (a *Agent) Run(ctx context.Context) error {
 
 	a.log.Info("connected to gateway", "url", a.wsURL)
 
-	// Start heartbeat
+	// Send immediate heartbeat so gateway knows our agentId
+	a.sendMessage(protocol.HeartbeatMessage{
+		Type:      protocol.TypeHeartbeat,
+		AgentID:   a.agentID,
+		ClusterID: a.clusterID,
+		Timestamp: time.Now().Unix(),
+	})
+
+	// Start periodic heartbeat
 	go a.heartbeatLoop(ctx)
 
 	// Start idle checker
@@ -299,6 +310,7 @@ func (a *Agent) handleSessionOpen(msg protocol.SessionOpenMessage) error {
 		msg.SessionID,
 		msg.Cols,
 		msg.Rows,
+		a.shellCommand,
 		func(sessionID, data string) {
 			a.sendMessage(protocol.PTYOutputMessage{
 				Type:      protocol.TypePTYOutput,

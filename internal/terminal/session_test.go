@@ -25,7 +25,7 @@ func TestNewPTYSession(t *testing.T) {
 		// Allow errors during test cleanup
 	}
 
-	session, err := NewPTYSession("test-1", 80, 24, onOutput, onError)
+	session, err := NewPTYSession("test-1", 80, 24, nil, onOutput, onError)
 	if err != nil {
 		t.Fatalf("NewPTYSession failed: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestPTYSessionResize(t *testing.T) {
 	onOutput := func(id, data string) {}
 	onError := func(id, errMsg string) {}
 
-	session, err := NewPTYSession("test-resize", 80, 24, onOutput, onError)
+	session, err := NewPTYSession("test-resize", 80, 24, nil, onOutput, onError)
 	if err != nil {
 		t.Fatalf("NewPTYSession failed: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestPTYSessionClose(t *testing.T) {
 	onOutput := func(id, data string) {}
 	onError := func(id, errMsg string) {}
 
-	session, err := NewPTYSession("test-close", 80, 24, onOutput, onError)
+	session, err := NewPTYSession("test-close", 80, 24, nil, onOutput, onError)
 	if err != nil {
 		t.Fatalf("NewPTYSession failed: %v", err)
 	}

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -26,6 +27,7 @@ var (
 	flagRemediationCooldown time.Duration
 	flagDryRun              bool
 	flagSkipUpload          bool
+	flagShellCommand        string
 )
 
 var daemonCmd = &cobra.Command{
@@ -58,6 +60,7 @@ func init() {
 	daemonCmd.Flags().DurationVar(&flagRemediationCooldown, "remediation-cooldown", 30*time.Minute, "Per-resource cooldown between remediations")
 	daemonCmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "Remediation dry-run mode (log actions without executing)")
 	daemonCmd.Flags().BoolVar(&flagSkipUpload, "skip-upload", false, "Skip host scan upload (controller mode — DaemonSet handles host reporting)")
+	daemonCmd.Flags().StringVar(&flagShellCommand, "shell-command", "", "Custom shell command for PTY sessions (e.g., 'nsenter -t 1 -m -u -i -n -- /bin/bash')")
 	rootCmd.AddCommand(daemonCmd)
 }
 
@@ -138,14 +141,21 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Parse shell command if provided
+	var shellCmd []string
+	if flagShellCommand != "" {
+		shellCmd = strings.Fields(flagShellCommand)
+	}
+
 	a := agent.New(agent.Config{
-		WSURL:       gatewayURL,
-		Token:       token,
-		ClusterID:   flagClusterID,
-		IdleTimeout: flagIdleTimeout,
-		ScanConfig:  scanCfg,
-		Permissions: permissions,
-		MaxSessions: flagMaxSessions,
+		WSURL:        gatewayURL,
+		Token:        token,
+		ClusterID:    flagClusterID,
+		IdleTimeout:  flagIdleTimeout,
+		ScanConfig:   scanCfg,
+		Permissions:  permissions,
+		MaxSessions:  flagMaxSessions,
+		ShellCommand: shellCmd,
 	})
 
 	return a.Run(context.Background())

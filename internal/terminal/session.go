@@ -26,7 +26,8 @@ type PTYSession struct {
 }
 
 // NewPTYSession spawns a new shell and starts relaying output.
-func NewPTYSession(id string, cols, rows int, onOutput func(string, string), onError func(string, string)) (*PTYSession, error) {
+// shellCmd overrides the default shell if non-empty (e.g., ["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--", "/bin/bash"]).
+func NewPTYSession(id string, cols, rows int, shellCmd []string, onOutput func(string, string), onError func(string, string)) (*PTYSession, error) {
 	if cols <= 0 {
 		cols = 80
 	}
@@ -34,20 +35,24 @@ func NewPTYSession(id string, cols, rows int, onOutput func(string, string), onE
 		rows = 24
 	}
 
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		for _, candidate := range []string{"/bin/bash", "/bin/sh"} {
-			if _, err := os.Stat(candidate); err == nil {
-				shell = candidate
-				break
+	var cmd *exec.Cmd
+	if len(shellCmd) > 0 {
+		cmd = exec.Command(shellCmd[0], shellCmd[1:]...)
+	} else {
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			for _, candidate := range []string{"/bin/bash", "/bin/sh"} {
+				if _, err := os.Stat(candidate); err == nil {
+					shell = candidate
+					break
+				}
+			}
+			if shell == "" {
+				shell = "/bin/sh"
 			}
 		}
-		if shell == "" {
-			shell = "/bin/sh"
-		}
+		cmd = exec.Command(shell)
 	}
-
-	cmd := exec.Command(shell)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{
