@@ -5,15 +5,15 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/tinkerbelle-io/tb-discover/internal/config"
-	"github.com/tinkerbelle-io/tb-discover/internal/install"
-	"github.com/tinkerbelle-io/tb-discover/internal/logging"
+	"github.com/tinkerbelle-io/tb-manage/internal/config"
+	"github.com/tinkerbelle-io/tb-manage/internal/install"
+	"github.com/tinkerbelle-io/tb-manage/internal/logging"
 )
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show tb-discover service status",
-	Long:  `Display the current state of the tb-discover service, config, and binary.`,
+	Short: "Show tb-manage service status",
+	Long:  `Display the current state of the tb-manage service, config, and binary.`,
 	RunE:  runStatus,
 }
 

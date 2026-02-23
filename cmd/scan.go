@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tinkerbelle-io/tb-discover/internal/logging"
-	"github.com/tinkerbelle-io/tb-discover/internal/scanner"
-	"github.com/tinkerbelle-io/tb-discover/internal/ssh"
-	"github.com/tinkerbelle-io/tb-discover/internal/upload"
+	"github.com/tinkerbelle-io/tb-manage/internal/logging"
+	"github.com/tinkerbelle-io/tb-manage/internal/scanner"
+	"github.com/tinkerbelle-io/tb-manage/internal/ssh"
+	"github.com/tinkerbelle-io/tb-manage/internal/upload"
 )
 
 var (

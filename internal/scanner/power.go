@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/power"
+	"github.com/tinkerbelle-io/tb-manage/internal/power"
 )
 
 // PowerScanner detects available power control mechanisms.

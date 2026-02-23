@@ -3,7 +3,7 @@ package scanner
 import (
 	"encoding/json"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/topology"
+	"github.com/tinkerbelle-io/tb-manage/internal/topology"
 )
 
 // ApplyTopology sets the host type based on network interface topology inference.

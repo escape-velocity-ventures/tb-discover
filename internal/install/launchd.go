@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	launchdLabel = "io.tinkerbelle.tb-discover"
+	launchdLabel = "io.tinkerbelle.tb-manage"
 )
 
 // launchdPlistPath returns the plist path. Uses system-wide location if running as root,
@@ -41,9 +41,9 @@ func LaunchdPlist(binPath string) string {
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/var/log/tb-discover.log</string>
+    <string>/var/log/tb-manage.log</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/tb-discover.err</string>
+    <string>/var/log/tb-manage.err</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>TB_LOG_LEVEL</key>

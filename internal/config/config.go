@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config holds all tb-discover configuration.
+// Config holds all tb-manage configuration.
 type Config struct {
 	Token             string        `yaml:"token"`
 	URL               string        `yaml:"url"`

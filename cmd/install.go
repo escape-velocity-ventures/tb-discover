@@ -4,24 +4,24 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/tinkerbelle-io/tb-discover/internal/install"
-	"github.com/tinkerbelle-io/tb-discover/internal/logging"
+	"github.com/tinkerbelle-io/tb-manage/internal/install"
+	"github.com/tinkerbelle-io/tb-manage/internal/logging"
 )
 
 var flagInstallProfile string
 
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install tb-discover as a system service",
-	Long: `Install tb-discover as a systemd service (Linux) or launchd daemon (macOS).
+	Short: "Install tb-manage as a system service",
+	Long: `Install tb-manage as a systemd service (Linux) or launchd daemon (macOS).
 
 This command:
   1. Validates the provided token against the SaaS URL
-  2. Writes a config file to /etc/tb-discover/config.yaml
+  2. Writes a config file to /etc/tb-manage/config.yaml
   3. Creates and enables a system service
   4. Starts the service immediately
 
-The service runs 'tb-discover daemon' with the configured profile.`,
+The service runs 'tb-manage daemon' with the configured profile.`,
 	RunE: runInstall,
 }
 
@@ -43,7 +43,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--url or TB_URL is required")
 	}
 
-	fmt.Println("Installing tb-discover...")
+	fmt.Println("Installing tb-manage...")
 
 	cfg := install.InstallConfig{
 		Token:   token,
@@ -55,9 +55,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("install failed: %w", err)
 	}
 
-	fmt.Println("tb-discover installed and running.")
+	fmt.Println("tb-manage installed and running.")
 	fmt.Printf("  Config: %s\n", install.DefaultConfigFile)
 	fmt.Printf("  Profile: %s\n", flagInstallProfile)
-	fmt.Println("\nCheck status with: tb-discover status")
+	fmt.Println("\nCheck status with: tb-manage status")
 	return nil
 }

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tinkerbelle-io/tb-discover/internal/agent"
-	"github.com/tinkerbelle-io/tb-discover/internal/config"
-	"github.com/tinkerbelle-io/tb-discover/internal/logging"
-	"github.com/tinkerbelle-io/tb-discover/internal/upload"
+	"github.com/tinkerbelle-io/tb-manage/internal/agent"
+	"github.com/tinkerbelle-io/tb-manage/internal/config"
+	"github.com/tinkerbelle-io/tb-manage/internal/logging"
+	"github.com/tinkerbelle-io/tb-manage/internal/upload"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Run as a persistent agent with scanning and terminal support",
-	Long: `Run tb-discover as a daemon that continuously scans infrastructure,
+	Long: `Run tb-manage as a daemon that continuously scans infrastructure,
 reports to TinkerBelle SaaS, and serves terminal sessions via WebSocket.
 
 The daemon runs two concurrent loops:

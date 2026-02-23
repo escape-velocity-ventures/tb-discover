@@ -6,14 +6,14 @@ import (
 )
 
 func TestSystemdUnitContent(t *testing.T) {
-	unit := SystemdUnit("/usr/local/bin/tb-discover")
+	unit := SystemdUnit("/usr/local/bin/tb-manage")
 
 	checks := []struct {
 		name     string
 		contains string
 	}{
-		{"description", "TinkerBelle Discovery Agent"},
-		{"exec start", "ExecStart=/usr/local/bin/tb-discover daemon --config /etc/tb-discover/config.yaml"},
+		{"description", "TinkerBelle Management Agent"},
+		{"exec start", "ExecStart=/usr/local/bin/tb-manage daemon --config /etc/tb-manage/config.yaml"},
 		{"restart", "Restart=always"},
 		{"restart sec", "RestartSec=10"},
 		{"after network", "After=network-online.target"},
@@ -33,20 +33,20 @@ func TestSystemdUnitContent(t *testing.T) {
 }
 
 func TestLaunchdPlistContent(t *testing.T) {
-	plist := LaunchdPlist("/usr/local/bin/tb-discover")
+	plist := LaunchdPlist("/usr/local/bin/tb-manage")
 
 	checks := []struct {
 		name     string
 		contains string
 	}{
-		{"label", "io.tinkerbelle.tb-discover"},
-		{"binary path", "/usr/local/bin/tb-discover"},
+		{"label", "io.tinkerbelle.tb-manage"},
+		{"binary path", "/usr/local/bin/tb-manage"},
 		{"daemon arg", "<string>daemon</string>"},
 		{"config arg", DefaultConfigFile},
 		{"run at load", "<key>RunAtLoad</key>"},
 		{"keep alive", "<key>KeepAlive</key>"},
-		{"stdout log", "/var/log/tb-discover.log"},
-		{"stderr log", "/var/log/tb-discover.err"},
+		{"stdout log", "/var/log/tb-manage.log"},
+		{"stderr log", "/var/log/tb-manage.err"},
 		{"plist dtd", "PropertyList-1.0.dtd"},
 	}
 
@@ -60,15 +60,15 @@ func TestLaunchdPlistContent(t *testing.T) {
 }
 
 func TestSystemdUnitCustomBinary(t *testing.T) {
-	unit := SystemdUnit("/opt/tb-discover/bin/tb-discover")
-	if !strings.Contains(unit, "ExecStart=/opt/tb-discover/bin/tb-discover") {
+	unit := SystemdUnit("/opt/tb-manage/bin/tb-manage")
+	if !strings.Contains(unit, "ExecStart=/opt/tb-manage/bin/tb-manage") {
 		t.Error("unit file should use custom binary path")
 	}
 }
 
 func TestLaunchdPlistCustomBinary(t *testing.T) {
-	plist := LaunchdPlist("/opt/tb-discover/bin/tb-discover")
-	if !strings.Contains(plist, "<string>/opt/tb-discover/bin/tb-discover</string>") {
+	plist := LaunchdPlist("/opt/tb-manage/bin/tb-manage")
+	if !strings.Contains(plist, "<string>/opt/tb-manage/bin/tb-manage</string>") {
 		t.Error("plist should use custom binary path")
 	}
 }
@@ -102,13 +102,13 @@ func maskTokenHelper(token string) string {
 }
 
 func TestServiceName(t *testing.T) {
-	if ServiceName != "tb-discover" {
-		t.Errorf("expected service name 'tb-discover', got %q", ServiceName)
+	if ServiceName != "tb-manage" {
+		t.Errorf("expected service name 'tb-manage', got %q", ServiceName)
 	}
 }
 
 func TestDefaultConfigDir(t *testing.T) {
-	if DefaultConfigDir != "/etc/tb-discover" {
-		t.Errorf("expected config dir '/etc/tb-discover', got %q", DefaultConfigDir)
+	if DefaultConfigDir != "/etc/tb-manage" {
+		t.Errorf("expected config dir '/etc/tb-manage', got %q", DefaultConfigDir)
 	}
 }

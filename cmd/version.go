@@ -10,7 +10,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("tb-discover %s\n", rootCmd.Version)
+		fmt.Printf("tb-manage %s\n", rootCmd.Version)
 	},
 }
 

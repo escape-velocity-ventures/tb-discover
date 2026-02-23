@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/protocol"
+	"github.com/tinkerbelle-io/tb-manage/internal/protocol"
 )
 
 func TestHandleMessageRouting(t *testing.T) {

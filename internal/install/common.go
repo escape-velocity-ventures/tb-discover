@@ -12,11 +12,11 @@ import (
 
 const (
 	// DefaultConfigDir is the base config directory.
-	DefaultConfigDir = "/etc/tb-discover"
+	DefaultConfigDir = "/etc/tb-manage"
 	// DefaultConfigFile is the config file path.
-	DefaultConfigFile = "/etc/tb-discover/config.yaml"
+	DefaultConfigFile = "/etc/tb-manage/config.yaml"
 	// ServiceName is the service name for systemd/launchd.
-	ServiceName = "tb-discover"
+	ServiceName = "tb-manage"
 )
 
 // InstallConfig holds the parameters for installation.

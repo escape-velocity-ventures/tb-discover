@@ -1,6 +1,6 @@
 package main
 
-import "github.com/tinkerbelle-io/tb-discover/cmd"
+import "github.com/tinkerbelle-io/tb-manage/cmd"
 
 var version = "dev"
 

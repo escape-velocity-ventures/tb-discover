@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	systemdUnitPath = "/etc/systemd/system/tb-discover.service"
+	systemdUnitPath = "/etc/systemd/system/tb-manage.service"
 )
 
 // SystemdUnit generates the systemd unit file content.
 func SystemdUnit(binPath string) string {
 	return fmt.Sprintf(`[Unit]
-Description=TinkerBelle Discovery Agent
-Documentation=https://github.com/tinkerbelle-io/tb-discover
+Description=TinkerBelle Management Agent
+Documentation=https://github.com/tinkerbelle-io/tb-manage
 After=network-online.target
 Wants=network-online.target
 

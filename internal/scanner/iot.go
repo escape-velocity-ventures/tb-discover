@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/iot"
+	"github.com/tinkerbelle-io/tb-manage/internal/iot"
 )
 
 // IoTScanner discovers IoT devices via available providers.

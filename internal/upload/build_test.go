@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/scanner"
+	"github.com/tinkerbelle-io/tb-manage/internal/scanner"
 )
 
 func TestBuildRequestHostMapping(t *testing.T) {

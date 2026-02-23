@@ -3,7 +3,7 @@ package upload
 import (
 	"encoding/json"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/scanner"
+	"github.com/tinkerbelle-io/tb-manage/internal/scanner"
 )
 
 // BuildRequest converts scan results to an EdgeIngestRequest.

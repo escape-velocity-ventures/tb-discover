@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/insights"
+	"github.com/tinkerbelle-io/tb-manage/internal/insights"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"

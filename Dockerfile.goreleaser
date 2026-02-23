@@ -1,4 +1,4 @@
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates util-linux iproute2
-COPY tb-discover /tb-discover
-ENTRYPOINT ["/tb-discover"]
+COPY tb-manage /tb-manage
+ENTRYPOINT ["/tb-manage"]

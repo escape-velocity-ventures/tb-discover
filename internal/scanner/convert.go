@@ -1,6 +1,6 @@
 package scanner
 
-import "github.com/tinkerbelle-io/tb-discover/internal/scanner/parser"
+import "github.com/tinkerbelle-io/tb-manage/internal/scanner/parser"
 
 // convertParserInterfaces converts parser.InterfaceInfo to scanner.InterfaceInfo.
 func convertParserInterfaces(in []parser.InterfaceInfo) []InterfaceInfo {

@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/commands"
-	"github.com/tinkerbelle-io/tb-discover/internal/insights"
-	"github.com/tinkerbelle-io/tb-discover/internal/remediation"
-	"github.com/tinkerbelle-io/tb-discover/internal/scanner"
-	"github.com/tinkerbelle-io/tb-discover/internal/upload"
+	"github.com/tinkerbelle-io/tb-manage/internal/commands"
+	"github.com/tinkerbelle-io/tb-manage/internal/insights"
+	"github.com/tinkerbelle-io/tb-manage/internal/remediation"
+	"github.com/tinkerbelle-io/tb-manage/internal/scanner"
+	"github.com/tinkerbelle-io/tb-manage/internal/upload"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -180,7 +180,7 @@ func (sl *ScanLoop) runScan(ctx context.Context) {
 	result.Meta.SourceHost = hostname
 
 	// Override host name — HostScanner runs `hostname` inside the pod which
-	// returns the pod name (e.g., tb-discover-xxxx), not the real node name.
+	// returns the pod name (e.g., tb-manage-xxxx), not the real node name.
 	scanner.OverrideHostName(result, hostname)
 
 	sl.log.Info("scan complete",

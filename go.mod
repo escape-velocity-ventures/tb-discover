@@ -1,4 +1,4 @@
-module github.com/tinkerbelle-io/tb-discover
+module github.com/tinkerbelle-io/tb-manage
 
 go 1.25.0
 

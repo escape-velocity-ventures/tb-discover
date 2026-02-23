@@ -17,9 +17,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "tb-discover",
-	Short: "TinkerBelle infrastructure discovery agent",
-	Long: `tb-discover is a unified infrastructure discovery agent that scans hosts,
+	Use:   "tb-manage",
+	Short: "TinkerBelle infrastructure management agent",
+	Long: `tb-manage is a unified infrastructure management agent that scans hosts,
 networks, storage, containers, and Kubernetes clusters. It reports discovered
 infrastructure to TinkerBelle SaaS and can serve as a terminal session agent.`,
 	SilenceUsage: true,
@@ -29,14 +29,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flagToken, "token", "", "Agent authentication token (env: TB_TOKEN)")
 	rootCmd.PersistentFlags().StringVar(&flagURL, "url", "", "TinkerBelle SaaS URL (env: TB_URL)")
 	rootCmd.PersistentFlags().StringVar(&flagAnonKey, "anon-key", "", "Supabase anon key for API auth (env: TB_ANON_KEY)")
-	rootCmd.PersistentFlags().StringVar(&flagConfig, "config", "", "Config file path (default: /etc/tb-discover/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&flagConfig, "config", "", "Config file path (default: /etc/tb-manage/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&flagLogLevel, "log-level", "info", "Log level: debug, info, warn, error")
 }
 
 // Execute runs the root command.
 func Execute(version string) {
 	rootCmd.Version = version
-	rootCmd.SetVersionTemplate(fmt.Sprintf("tb-discover %s\n", version))
+	rootCmd.SetVersionTemplate(fmt.Sprintf("tb-manage %s\n", version))
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/tinkerbelle-io/tb-discover/internal/scanner/parser"
+	"github.com/tinkerbelle-io/tb-manage/internal/scanner/parser"
 )
 
 func collectNetworkInfo(ctx context.Context, runner CommandRunner, info *NetworkInfo) error {

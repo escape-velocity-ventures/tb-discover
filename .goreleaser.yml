@@ -1,10 +1,10 @@
 version: 2
 
-project_name: tb-discover
+project_name: tb-manage
 
 builds:
-  - id: tb-discover
-    binary: tb-discover
+  - id: tb-manage
+    binary: tb-manage
     env:
       - CGO_ENABLED=0
     goos:
@@ -23,7 +23,7 @@ archives:
 
 dockers:
   - image_templates:
-      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-amd64"
+      - "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}-amd64"
     use: buildx
     build_flag_templates:
       - "--platform=linux/amd64"
@@ -33,7 +33,7 @@ dockers:
       - LICENSE
 
   - image_templates:
-      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-arm64"
+      - "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}-arm64"
     use: buildx
     build_flag_templates:
       - "--platform=linux/arm64"
@@ -43,15 +43,15 @@ dockers:
       - LICENSE
 
 docker_manifests:
-  - name_template: "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}"
+  - name_template: "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}"
     image_templates:
-      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-amd64"
-      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-arm64"
+      - "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}-amd64"
+      - "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}-arm64"
 
-  - name_template: "ghcr.io/escape-velocity-ventures/tb-discover:latest"
+  - name_template: "ghcr.io/escape-velocity-ventures/tb-manage:latest"
     image_templates:
-      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-amd64"
-      - "ghcr.io/escape-velocity-ventures/tb-discover:{{ .Version }}-arm64"
+      - "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}-amd64"
+      - "ghcr.io/escape-velocity-ventures/tb-manage:{{ .Version }}-arm64"
 
 checksum:
   name_template: "checksums.txt"
@@ -67,6 +67,6 @@ changelog:
 release:
   github:
     owner: escape-velocity-ventures
-    name: tb-discover
+    name: tb-manage
   draft: false
   prerelease: auto

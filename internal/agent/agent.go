@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/tinkerbelle-io/tb-discover/internal/protocol"
-	"github.com/tinkerbelle-io/tb-discover/internal/terminal"
+	"github.com/tinkerbelle-io/tb-manage/internal/protocol"
+	"github.com/tinkerbelle-io/tb-manage/internal/terminal"
 )
 
 // nodeHostname returns the Kubernetes node name (NODE_NAME env) if set,
