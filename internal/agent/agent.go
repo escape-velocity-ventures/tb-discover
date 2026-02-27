@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -36,7 +37,8 @@ type Agent struct {
 	clusterID   string
 	agentID     string
 	wsURL       string
-	token       string
+	token              string
+	tokenInURLFallback bool
 	writeMu     sync.Mutex
 
 	// Permissions
@@ -63,7 +65,8 @@ type Config struct {
 	ScanConfig   *ScanLoopConfig // nil = no scan loop
 	Permissions  []string        // e.g., ["terminal", "scan"]
 	MaxSessions  int             // 0 = DefaultMaxSessions
-	ShellCommand []string        // Custom shell command (e.g., ["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--", "/bin/bash"])
+	ShellCommand       []string // Custom shell command (e.g., ["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--", "/bin/bash"])
+	TokenInURLFallback bool     // DEPRECATED: also send token in URL query param for migration
 }
 
 // New creates a new Agent (does not connect yet).
@@ -87,7 +90,8 @@ func New(cfg Config) *Agent {
 		clusterID:    cfg.ClusterID,
 		agentID:      hostname,
 		wsURL:        cfg.WSURL,
-		token:        cfg.Token,
+		token:              cfg.Token,
+		tokenInURLFallback: cfg.TokenInURLFallback,
 		permissions:  perms,
 		maxSessions:  maxSessions,
 		shellCommand: cfg.ShellCommand,
@@ -182,11 +186,20 @@ func (a *Agent) connect() error {
 	if err != nil {
 		return err
 	}
-	q := u.Query()
-	q.Set("token", a.token)
-	u.RawQuery = q.Encode()
 
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// Always send token in Authorization header (secure)
+	headers := http.Header{}
+	headers.Set("Authorization", "Bearer "+a.token)
+
+	// DEPRECATED: also send token in URL query param for backward compatibility
+	if a.tokenInURLFallback {
+		a.log.Warn("sending token in URL query parameter is deprecated; set token_in_url_fallback: false once gateway supports Authorization header")
+		q := u.Query()
+		q.Set("token", a.token)
+		u.RawQuery = q.Encode()
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
 	if err != nil {
 		return err
 	}
@@ -283,6 +296,11 @@ func (a *Agent) handleMessage(raw []byte) error {
 func (a *Agent) buildShellCommand(target *protocol.TerminalTarget) ([]string, string, error) {
 	if target == nil {
 		return a.shellCommand, "", nil
+	}
+
+	// Validate target fields to prevent shell injection
+	if err := protocol.ValidateTerminalTarget(target); err != nil {
+		return nil, "INVALID_TARGET", err
 	}
 
 	shell := target.Shell
