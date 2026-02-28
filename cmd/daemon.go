@@ -30,6 +30,7 @@ var (
 	flagSkipUpload          bool
 	flagShellCommand        string
 	flagAuditLog            string
+	flagPublicKey           string
 )
 
 var daemonCmd = &cobra.Command{
@@ -63,6 +64,7 @@ func init() {
 	daemonCmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "Remediation dry-run mode (log actions without executing)")
 	daemonCmd.Flags().BoolVar(&flagSkipUpload, "skip-upload", false, "Skip host scan upload (controller mode — DaemonSet handles host reporting)")
 	daemonCmd.Flags().StringVar(&flagAuditLog, "audit-log", "", "Custom audit log path (default: ~/.tb-manage/audit.log on macOS, /var/log/tb-manage/audit.log on Linux)")
+	daemonCmd.Flags().StringVar(&flagPublicKey, "public-key", "", "Ed25519 public key for command signature verification (hex or base64, env: TB_PUBLIC_KEY)")
 	daemonCmd.Flags().StringVar(&flagShellCommand, "shell-command", "", "Custom shell command for PTY sessions (e.g., 'nsenter -t 1 -m -u -i -n -- /bin/bash')")
 	rootCmd.AddCommand(daemonCmd)
 }
@@ -161,6 +163,7 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		ShellCommand:       shellCmd,
 		TokenInURLFallback: cfg.TokenInURLFallback,
 		AuditLogPath:       flagAuditLog,
+		PublicKey:          resolvePublicKey(),
 	})
 
 	return a.Run(context.Background())
@@ -207,4 +210,12 @@ func validateGatewayURL(gatewayURL string, allowInsecure bool) error {
 		return fmt.Errorf("gateway URL must use wss:// (or ws:// with --allow-insecure); got: %s", gatewayURL)
 	}
 	return nil
+}
+
+// resolvePublicKey returns the Ed25519 public key from flag or env.
+func resolvePublicKey() string {
+	if flagPublicKey != "" {
+		return flagPublicKey
+	}
+	return resolveEnv("TB_PUBLIC_KEY")
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/tinkerbelle-io/tb-manage/internal/audit"
+	"github.com/tinkerbelle-io/tb-manage/internal/signing"
 	"github.com/tinkerbelle-io/tb-manage/internal/protocol"
 	"github.com/tinkerbelle-io/tb-manage/internal/terminal"
 )
@@ -50,6 +51,9 @@ type Agent struct {
 	// Audit
 	auditLog *audit.AuditLogger
 
+	// Signing verification
+	verifier *signing.Verifier
+
 	// Scan loop
 	scanLoop *ScanLoop
 	log      *slog.Logger
@@ -72,6 +76,7 @@ type Config struct {
 	ShellCommand       []string // Custom shell command (e.g., ["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--", "/bin/bash"])
 	TokenInURLFallback bool     // DEPRECATED: also send token in URL query param for migration
 	AuditLogPath       string   // Custom audit log path (empty = default)
+	PublicKey          string   // Ed25519 public key for command verification (hex or base64)
 }
 
 // New creates a new Agent (does not connect yet).
@@ -98,6 +103,20 @@ func New(cfg Config) *Agent {
 		logger.Info("audit logging enabled", "path", cfg.AuditLogPath)
 	}
 
+	// Initialize signature verifier if public key provided
+	var verifier *signing.Verifier
+	if cfg.PublicKey != "" {
+		pubKey, err := signing.ParsePublicKey(cfg.PublicKey)
+		if err != nil {
+			logger.Error("invalid public key", "error", err)
+			return nil
+		}
+		verifier = signing.NewVerifier(pubKey)
+		logger.Info("command signature verification enabled")
+	} else {
+		logger.Warn("no public key configured — commands will NOT be verified (insecure)")
+	}
+
 	a := &Agent{
 		sessions:     make(map[string]*terminal.PTYSession),
 		idleTimeout:  cfg.IdleTimeout,
@@ -111,6 +130,7 @@ func New(cfg Config) *Agent {
 		shellCommand: cfg.ShellCommand,
 		log:          logger,
 		auditLog:     auditLog,
+		verifier:     verifier,
 	}
 
 	if cfg.ScanConfig != nil {
@@ -270,6 +290,29 @@ func (a *Agent) shutdown() {
 }
 
 func (a *Agent) handleMessage(raw []byte) error {
+	// Verify command signature if verifier is configured
+	if a.verifier != nil {
+		command, result := a.verifier.Verify(raw)
+		if !result.Valid {
+			a.log.Warn("rejected unsigned/invalid command",
+				"reason", result.Reason,
+				"user_id", result.UserID,
+				"origin", result.Origin,
+			)
+			if a.auditLog != nil {
+				a.auditLog.Log(audit.AuditEntry{
+					EventType: audit.EventBlocked,
+					UserID:    result.UserID,
+					Origin:    result.Origin,
+					Reason:    result.Reason,
+				})
+			}
+			return fmt.Errorf("command verification failed: %s", result.Reason)
+		}
+		// Use the stripped command (without signing fields) for processing
+		raw = command
+	}
+
 	var env protocol.Envelope
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return fmt.Errorf("invalid message: %w", err)
