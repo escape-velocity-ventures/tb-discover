@@ -97,3 +97,58 @@ func TestPTYSessionClose(t *testing.T) {
 		t.Fatal("Done channel not closed after Close()")
 	}
 }
+
+func TestPTYSessionEnvFiltering(t *testing.T) {
+	// Set sensitive env vars for this test
+	t.Setenv("TB_TOKEN", "secret-token-value")
+	t.Setenv("AWS_SECRET_KEY", "aws-secret")
+	t.Setenv("MY_API_KEY", "some-api-key")
+	t.Setenv("DB_PASSWORD", "dbpass")
+	t.Setenv("SAFE_VAR", "should-pass")
+
+	var mu sync.Mutex
+	var output strings.Builder
+	ready := make(chan struct{}, 10)
+
+	onOutput := func(id, data string) {
+		mu.Lock()
+		defer mu.Unlock()
+		output.WriteString(data)
+		select {
+		case ready <- struct{}{}:
+		default:
+		}
+	}
+	onError := func(id, errMsg string) {}
+
+	session, err := NewPTYSession("test-env", 80, 24, nil, onOutput, onError)
+	if err != nil {
+		t.Fatalf("NewPTYSession failed: %v", err)
+	}
+	defer session.Close()
+
+	// Print all env vars
+	err = session.Write([]byte("env\n"))
+	if err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Wait for output
+	time.Sleep(1 * time.Second)
+
+	mu.Lock()
+	got := output.String()
+	mu.Unlock()
+
+	// Sensitive vars should NOT be present
+	for _, sensitive := range []string{"TB_TOKEN=", "AWS_SECRET_KEY=", "MY_API_KEY=", "DB_PASSWORD="} {
+		if strings.Contains(got, sensitive) {
+			t.Errorf("PTY env should not contain %s", sensitive)
+		}
+	}
+
+	// TERM should be set
+	if !strings.Contains(got, "TERM=xterm-256color") {
+		t.Errorf("PTY env should contain TERM=xterm-256color")
+	}
+}

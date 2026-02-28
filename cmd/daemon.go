@@ -29,6 +29,7 @@ var (
 	flagDryRun              bool
 	flagSkipUpload          bool
 	flagShellCommand        string
+	flagAuditLog            string
 )
 
 var daemonCmd = &cobra.Command{
@@ -61,6 +62,7 @@ func init() {
 	daemonCmd.Flags().DurationVar(&flagRemediationCooldown, "remediation-cooldown", 30*time.Minute, "Per-resource cooldown between remediations")
 	daemonCmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "Remediation dry-run mode (log actions without executing)")
 	daemonCmd.Flags().BoolVar(&flagSkipUpload, "skip-upload", false, "Skip host scan upload (controller mode — DaemonSet handles host reporting)")
+	daemonCmd.Flags().StringVar(&flagAuditLog, "audit-log", "", "Custom audit log path (default: ~/.tb-manage/audit.log on macOS, /var/log/tb-manage/audit.log on Linux)")
 	daemonCmd.Flags().StringVar(&flagShellCommand, "shell-command", "", "Custom shell command for PTY sessions (e.g., 'nsenter -t 1 -m -u -i -n -- /bin/bash')")
 	rootCmd.AddCommand(daemonCmd)
 }
@@ -158,6 +160,7 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		MaxSessions:  flagMaxSessions,
 		ShellCommand:       shellCmd,
 		TokenInURLFallback: cfg.TokenInURLFallback,
+		AuditLogPath:       flagAuditLog,
 	})
 
 	return a.Run(context.Background())

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/tinkerbelle-io/tb-manage/internal/audit"
 	"github.com/tinkerbelle-io/tb-manage/internal/protocol"
 	"github.com/tinkerbelle-io/tb-manage/internal/terminal"
 )
@@ -46,6 +47,9 @@ type Agent struct {
 	maxSessions  int
 	shellCommand []string
 
+	// Audit
+	auditLog *audit.AuditLogger
+
 	// Scan loop
 	scanLoop *ScanLoop
 	log      *slog.Logger
@@ -67,6 +71,7 @@ type Config struct {
 	MaxSessions  int             // 0 = DefaultMaxSessions
 	ShellCommand       []string // Custom shell command (e.g., ["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--", "/bin/bash"])
 	TokenInURLFallback bool     // DEPRECATED: also send token in URL query param for migration
+	AuditLogPath       string   // Custom audit log path (empty = default)
 }
 
 // New creates a new Agent (does not connect yet).
@@ -84,6 +89,15 @@ func New(cfg Config) *Agent {
 		maxSessions = DefaultMaxSessions
 	}
 
+	// Initialize audit logger
+	var auditLog *audit.AuditLogger
+	if al, err := audit.NewAuditLogger(cfg.AuditLogPath); err != nil {
+		logger.Warn("failed to initialize audit logger", "error", err)
+	} else {
+		auditLog = al
+		logger.Info("audit logging enabled", "path", cfg.AuditLogPath)
+	}
+
 	a := &Agent{
 		sessions:     make(map[string]*terminal.PTYSession),
 		idleTimeout:  cfg.IdleTimeout,
@@ -96,6 +110,7 @@ func New(cfg Config) *Agent {
 		maxSessions:  maxSessions,
 		shellCommand: cfg.ShellCommand,
 		log:          logger,
+		auditLog:     auditLog,
 	}
 
 	if cfg.ScanConfig != nil {
@@ -240,6 +255,10 @@ func (a *Agent) shutdown() {
 	}
 	a.sessions = make(map[string]*terminal.PTYSession)
 	a.mu.Unlock()
+
+	if a.auditLog != nil {
+		a.auditLog.Close()
+	}
 
 	if a.conn != nil {
 		_ = a.conn.WriteMessage(
@@ -430,6 +449,12 @@ func (a *Agent) handleSessionOpen(msg protocol.SessionOpenMessage) error {
 
 	a.sessions[msg.SessionID] = session
 	a.log.Info("session opened", "session_id", msg.SessionID, "target", targetDesc)
+	if a.auditLog != nil {
+		a.auditLog.Log(audit.AuditEntry{
+			SessionID: msg.SessionID,
+			EventType: audit.EventSessionOpen,
+		})
+	}
 
 	// Watch for session exit
 	go func() {
@@ -437,6 +462,12 @@ func (a *Agent) handleSessionOpen(msg protocol.SessionOpenMessage) error {
 		a.mu.Lock()
 		delete(a.sessions, msg.SessionID)
 		a.mu.Unlock()
+		if a.auditLog != nil {
+			a.auditLog.Log(audit.AuditEntry{
+				SessionID: msg.SessionID,
+				EventType: audit.EventSessionClose,
+			})
+		}
 		a.sendMessage(protocol.SessionCloseMessage{
 			Type:      protocol.TypeSessionClose,
 			SessionID: msg.SessionID,
@@ -459,6 +490,13 @@ func (a *Agent) handlePTYInput(msg protocol.PTYInputMessage) error {
 	if !ok {
 		return fmt.Errorf("session %s not found", msg.SessionID)
 	}
+	if a.auditLog != nil {
+		a.auditLog.Log(audit.AuditEntry{
+			SessionID: msg.SessionID,
+			EventType: audit.EventCommand,
+			Input:     msg.Data,
+		})
+	}
 	return session.Write([]byte(msg.Data))
 }
 
@@ -480,6 +518,12 @@ func (a *Agent) handleSessionClose(msg protocol.SessionCloseMessage) error {
 	}
 	a.mu.Unlock()
 	if ok {
+		if a.auditLog != nil {
+			a.auditLog.Log(audit.AuditEntry{
+				SessionID: msg.SessionID,
+				EventType: audit.EventSessionClose,
+			})
+		}
 		session.Close()
 		a.log.Info("session closed", "session_id", msg.SessionID)
 	}
