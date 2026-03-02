@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tinkerbelle-io/tb-manage/internal/agent"
+	"github.com/tinkerbelle-io/tb-manage/internal/auth"
 	"github.com/tinkerbelle-io/tb-manage/internal/config"
 	"github.com/tinkerbelle-io/tb-manage/internal/logging"
 	"github.com/tinkerbelle-io/tb-manage/internal/upload"
@@ -75,12 +76,28 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 	// Load config file for defaults (permissions, etc.)
 	cfg, _ := config.Load(flagConfig)
 
+	// Resolve values: flag > env > config file > default
 	token := resolveToken()
+	if token == "" && cfg != nil && cfg.Token != "" {
+		token = cfg.Token
+	}
+
 	saasURL := resolveSaaSURL()
+	if saasURL == "" && cfg != nil && cfg.URL != "" {
+		saasURL = cfg.URL
+	}
+
 	gatewayURL := resolveGatewayURL()
 
-	// Need at least one mode of operation: root token OR multi-upstream config
-	if token == "" && resolveUpstreams() == "" {
+	identity := resolveIdentity()
+	// resolveIdentity returns "token" as default — if neither flag nor env
+	// was set, fall back to config file
+	if !cmd.Flags().Changed("identity") && resolveEnv("TB_IDENTITY") == "" && cfg != nil && cfg.Identity != "" {
+		identity = cfg.Identity
+	}
+
+	// Need at least one mode of operation: token, multi-upstream, or host-key identity
+	if token == "" && resolveUpstreams() == "" && identity != "ssh-host-key" {
 		return cmd.Help()
 	}
 
@@ -131,12 +148,17 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 			DryRun:                 flagDryRun,
 		}
 	} else if saasURL != "" {
+		anonKey := resolveAnonKey()
+		if anonKey == "" && cfg != nil && cfg.AnonKey != "" {
+			anonKey = cfg.AnonKey
+		}
 		scanCfg = &agent.ScanLoopConfig{
 			Profile:                flagDaemonProfile,
 			Interval:               flagScanInterval,
 			UploadURL:              saasURL,
 			Token:                  token,
-			AnonKey:                resolveAnonKey(),
+			AnonKey:                anonKey,
+			IdentityMode:           identity,
 			Version:                rootCmd.Version,
 			ExcludeNamespaces:      excludeNS,
 			SkipUpload:             flagSkipUpload,
@@ -152,6 +174,17 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		shellCmd = strings.Fields(flagShellCommand)
 	}
 
+	// Load SSH host key if identity mode is ssh-host-key
+	var hostIdentity *auth.HostIdentity
+	if identity == "ssh-host-key" {
+		hi, err := auth.LoadHostKey("")
+		if err != nil {
+			return fmt.Errorf("load host key for gateway auth: %w", err)
+		}
+		hostIdentity = hi
+		slog.Info("loaded SSH host key for gateway auth", "fingerprint", hi.Fingerprint)
+	}
+
 	a := agent.New(agent.Config{
 		WSURL:        gatewayURL,
 		Token:        token,
@@ -164,6 +197,8 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 		TokenInURLFallback: cfg.TokenInURLFallback,
 		AuditLogPath:       flagAuditLog,
 		PublicKey:          resolvePublicKey(),
+		IdentityMode:       identity,
+		HostIdentity:       hostIdentity,
 	})
 
 	return a.Run(context.Background())

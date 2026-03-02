@@ -3,3 +3,7 @@ tb-manage
 *.test
 *.out
 .DS_Store
+
+# Auto-added by Secret Guardian
+**/keys/*_key
+**/keys/*_key.pub

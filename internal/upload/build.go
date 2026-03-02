@@ -38,12 +38,18 @@ func BuildRequest(result *scanner.Result) *EdgeIngestRequest {
 			if result.Network != nil {
 				var netInfo scanner.NetworkInfo
 				if err := json.Unmarshal(result.Network, &netInfo); err == nil {
+					host.Network.PublicIP = netInfo.PublicIP
+					host.Network.CloudProvider = netInfo.CloudProvider
 					for _, iface := range netInfo.Interfaces {
 						host.Network.Interfaces = append(host.Network.Interfaces, HostInterface{
 							Name: iface.Name,
 							IP:   iface.IP,
 							MAC:  iface.MAC,
 						})
+					}
+					// If cloud provider detected, override host type to "cloud"
+					if netInfo.CloudProvider != "" && host.Type != "vm" {
+						host.Type = "cloud"
 					}
 				}
 			}

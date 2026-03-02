@@ -9,12 +9,14 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/tinkerbelle-io/tb-manage/internal/audit"
+	"github.com/tinkerbelle-io/tb-manage/internal/auth"
 	"github.com/tinkerbelle-io/tb-manage/internal/signing"
 	"github.com/tinkerbelle-io/tb-manage/internal/protocol"
 	"github.com/tinkerbelle-io/tb-manage/internal/terminal"
@@ -41,6 +43,8 @@ type Agent struct {
 	wsURL       string
 	token              string
 	tokenInURLFallback bool
+	identityMode       string
+	hostIdentity       *auth.HostIdentity
 	writeMu     sync.Mutex
 
 	// Permissions
@@ -77,6 +81,8 @@ type Config struct {
 	TokenInURLFallback bool     // DEPRECATED: also send token in URL query param for migration
 	AuditLogPath       string   // Custom audit log path (empty = default)
 	PublicKey          string   // Ed25519 public key for command verification (hex or base64)
+	IdentityMode       string            // "token" or "ssh-host-key"
+	HostIdentity       *auth.HostIdentity // SSH host key identity (when IdentityMode == "ssh-host-key")
 }
 
 // New creates a new Agent (does not connect yet).
@@ -125,6 +131,8 @@ func New(cfg Config) *Agent {
 		wsURL:        cfg.WSURL,
 		token:              cfg.Token,
 		tokenInURLFallback: cfg.TokenInURLFallback,
+		identityMode:       cfg.IdentityMode,
+		hostIdentity:       cfg.HostIdentity,
 		permissions:  perms,
 		maxSessions:  maxSessions,
 		shellCommand: cfg.ShellCommand,
@@ -222,16 +230,32 @@ func (a *Agent) connect() error {
 		return err
 	}
 
-	// Always send token in Authorization header (secure)
 	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+a.token)
 
-	// DEPRECATED: also send token in URL query param for backward compatibility
-	if a.tokenInURLFallback {
-		a.log.Warn("sending token in URL query parameter is deprecated; set token_in_url_fallback: false once gateway supports Authorization header")
+	if a.identityMode == "ssh-host-key" && a.hostIdentity != nil {
+		// SSH host key auth: sign fingerprint:timestamp and send as query params
+		ts := strconv.FormatInt(time.Now().Unix(), 10)
+		message := a.hostIdentity.Fingerprint + ":" + ts
+		sig := a.hostIdentity.SignRequest([]byte(message))
+
 		q := u.Query()
-		q.Set("token", a.token)
+		q.Set("fingerprint", a.hostIdentity.Fingerprint)
+		q.Set("timestamp", ts)
+		q.Set("signature", sig)
 		u.RawQuery = q.Encode()
+
+		a.log.Info("connecting with ssh-host-key identity", "fingerprint", a.hostIdentity.Fingerprint)
+	} else {
+		// Token auth (existing path)
+		headers.Set("Authorization", "Bearer "+a.token)
+
+		// DEPRECATED: also send token in URL query param for backward compatibility
+		if a.tokenInURLFallback {
+			a.log.Warn("sending token in URL query parameter is deprecated; set token_in_url_fallback: false once gateway supports Authorization header")
+			q := u.Query()
+			q.Set("token", a.token)
+			u.RawQuery = q.Encode()
+		}
 	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)

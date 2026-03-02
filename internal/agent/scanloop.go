@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/tinkerbelle-io/tb-manage/internal/auth"
 	"github.com/tinkerbelle-io/tb-manage/internal/commands"
 	"github.com/tinkerbelle-io/tb-manage/internal/insights"
 	"github.com/tinkerbelle-io/tb-manage/internal/remediation"
@@ -20,6 +21,7 @@ type ScanLoopConfig struct {
 	UploadURL         string            // Supabase base URL for edge-ingest (single mode)
 	Token             string            // agent_token (single mode)
 	AnonKey           string            // Supabase anon key (single mode)
+	IdentityMode      string            // "token" or "ssh-host-key"
 	Upstreams         []upload.Upstream // Multi-upstream mode
 	Version           string            // binary version
 	ExcludeNamespaces []string          // namespaces to skip during k8s scan
@@ -65,6 +67,15 @@ func NewScanLoop(cfg ScanLoopConfig, logger *slog.Logger) *ScanLoop {
 
 	if len(cfg.Upstreams) > 0 {
 		sl.uploader = upload.NewMultiClient(cfg.Upstreams)
+	} else if cfg.UploadURL != "" && cfg.IdentityMode == "ssh-host-key" {
+		// SSH host key identity: load host key and create host-key client.
+		// Token is passed through for cluster routing (host key = identity, token = cluster).
+		hostID, err := auth.LoadHostKey("")
+		if err != nil {
+			logger.Error("failed to load host key for scan loop", "error", err)
+		} else {
+			sl.uploader = upload.NewHostKeyClient(cfg.UploadURL, cfg.AnonKey, cfg.Token, hostID)
+		}
 	} else if cfg.UploadURL != "" && cfg.Token != "" {
 		sl.uploader = upload.NewClient(cfg.UploadURL, cfg.Token, cfg.AnonKey)
 	}

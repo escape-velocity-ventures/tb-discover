@@ -46,8 +46,10 @@ type HostSystem struct {
 
 // HostNetwork matches the network field in HostScanResult.
 type HostNetwork struct {
-	Hostname   string          `json:"hostname"`
-	Interfaces []HostInterface `json:"interfaces"`
+	Hostname      string          `json:"hostname"`
+	PublicIP      string          `json:"public_ip,omitempty"`
+	CloudProvider string          `json:"cloud_provider,omitempty"`
+	Interfaces    []HostInterface `json:"interfaces"`
 }
 
 // HostInterface matches the interface shape expected by edge-ingest.
